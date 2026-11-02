@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validar:
+    name: Compilador e consistência
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Testes do compilador ABP → DNR
+        run: node tests/abp.test.mjs
+
+      - name: Manifest, arquivos e regras
+        run: node tools/check.mjs
+
+  navegador:
+    name: Teste no Chrome (informativo)
+    runs-on: ubuntu-latest
+    # O e2e abre um Chrome real e carrega a extensão sem empacotar; se o runner
+    # não permitir, o resultado não bloqueia o merge.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: e2e (bloqueio, ocultação, contador, popup, opções)
+        run: node tools/e2e.mjs

@@ -1,0 +1,216 @@
+/* AdShield — tema compartilhado entre popup e opções */
+
+:root {
+  --bg: #0b1120;
+  --panel: #131c2f;
+  --panel-2: #1a2540;
+  --border: #26324b;
+  --text: #e8eefc;
+  --muted: #93a1bd;
+  --accent: #3b74f5;
+  --accent-strong: #2f6fed;
+  --good: #2ecc71;
+  --warn: #f0b429;
+  --bad: #ef5350;
+  --radius: 12px;
+  --shadow: 0 10px 30px rgba(3, 8, 20, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: #8fb4ff;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.spread {
+  justify-content: space-between;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 12px;
+}
+
+.mono {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+button {
+  font: inherit;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  padding: 9px 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+
+button:hover:not(:disabled) {
+  background: #22304f;
+  border-color: #33415f;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--accent-strong);
+  border-color: var(--accent);
+}
+
+button.primary:hover:not(:disabled) {
+  background: #2a63d6;
+}
+
+button.danger {
+  background: #3a1b1f;
+  border-color: #6b2b32;
+  color: #ffb4ba;
+}
+
+button.ghost {
+  background: transparent;
+}
+
+/* Interruptor */
+.switch {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  flex: 0 0 auto;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.switch span {
+  position: absolute;
+  inset: 0;
+  background: #2a3550;
+  border-radius: 999px;
+  transition: background 0.2s ease;
+  pointer-events: none;
+}
+
+.switch span::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.switch input:checked + span {
+  background: var(--accent-strong);
+}
+
+.switch input:checked + span::after {
+  transform: translateX(20px);
+  background: #fff;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #17233a;
+  border: 1px solid var(--border);
+}
+
+.pill.good {
+  color: #8ef0b0;
+  border-color: #1f5137;
+  background: #10281c;
+}
+
+.pill.warn {
+  color: #ffd98a;
+  border-color: #5c4516;
+  background: #2a2010;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+input[type="text"],
+input[type="url"],
+textarea {
+  width: 100%;
+  background: #0d1526;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 9px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+textarea {
+  min-height: 140px;
+  resize: vertical;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+input:focus,
+textarea:focus {
+  outline: 2px solid #2f6fed55;
+  border-color: var(--accent);
+}

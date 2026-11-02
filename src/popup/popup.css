@@ -1,0 +1,93 @@
+body {
+  width: 340px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 2px 4px;
+}
+
+.head h1 {
+  font-size: 15px;
+  flex: 1;
+}
+
+.site {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.host {
+  font-size: 16px;
+  font-weight: 650;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.counters {
+  gap: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.counters > div {
+  flex: 1;
+  text-align: center;
+}
+
+.counters > div + div {
+  border-left: 1px solid var(--border);
+}
+
+.count {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  margin: 0;
+  min-height: 0;
+}
+
+.hint:empty {
+  display: none;
+}
+
+.title {
+  font-size: 13.5px;
+}
+
+.second {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actions button {
+  flex: 1;
+}
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 2px 2px 0;
+  gap: 8px;
+}

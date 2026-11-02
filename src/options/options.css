@@ -1,0 +1,164 @@
+body {
+  padding: 28px 20px 60px;
+}
+
+.top {
+  max-width: 780px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.top h1 {
+  font-size: 20px;
+}
+
+.top p {
+  margin: 2px 0 0;
+}
+
+.top .pill {
+  margin-left: auto;
+}
+
+main {
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card > h2 {
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+
+.row.spread > h2 {
+  margin-bottom: 0;
+}
+
+.stats {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0 8px;
+}
+
+.stats > div {
+  flex: 1;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+}
+
+.big {
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.top-domains {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.top-domains td {
+  padding: 6px 4px;
+  border-top: 1px solid var(--border);
+}
+
+.top-domains td:last-child {
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.top-domains:empty {
+  display: none;
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.list-row:first-child {
+  border-top: 0;
+}
+
+.list-row .grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-row .name {
+  font-weight: 600;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note {
+  margin: 10px 0 0;
+}
+
+#customFilters {
+  margin: 10px 0;
+}
+
+.subs {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+}
+
+.subs:empty::after {
+  content: "nenhuma ainda";
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.setting + .setting {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.checklist {
+  margin: 0 0 14px;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.checklist li + li {
+  margin-top: 6px;
+}
+
+code {
+  background: #0d1526;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-size: 12px;
+}
+
+.badge-err {
+  color: #ff9aa2;
+}
+
+.badge-ok {
+  color: #8ef0b0;
+}

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>AdShield</title>
+    <link rel="stylesheet" href="../ui/theme.css" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="head">
+      <img src="../../icons/icon32.png" alt="" width="24" height="24" />
+      <h1>AdShield</h1>
+      <span class="pill" id="globalPill"><span class="dot"></span><span id="globalLabel">—</span></span>
+    </header>
+
+    <section class="card site">
+      <div class="row spread">
+        <div>
+          <div class="small muted">Site atual</div>
+          <div class="host" id="host">—</div>
+        </div>
+        <label class="switch" title="Pausar/ativar neste site">
+          <input type="checkbox" id="siteToggle" />
+          <span></span>
+        </label>
+      </div>
+      <div class="row counters">
+        <div>
+          <div class="count" id="tabCount">0</div>
+          <div class="small muted">nesta aba</div>
+        </div>
+        <div>
+          <div class="count" id="todayCount">0</div>
+          <div class="small muted">hoje</div>
+        </div>
+        <div>
+          <div class="count" id="totalCount">0</div>
+          <div class="small muted">total</div>
+        </div>
+      </div>
+      <p class="small muted hint" id="siteHint"></p>
+    </section>
+
+    <section class="card">
+      <div class="row spread">
+        <div>
+          <h2 class="title">Bloqueio global</h2>
+          <div class="small muted">Listas EasyList + EasyPrivacy</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="globalToggle" />
+          <span></span>
+        </label>
+      </div>
+      <div class="row spread second">
+        <div>
+          <h2 class="title">Pausar só esta aba</h2>
+          <div class="small muted">Volta ao normal ao recarregar ou fechar</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="tabToggle" />
+          <span></span>
+        </label>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button id="pickButton" class="primary">Bloquear elemento</button>
+      <button id="optionsButton" class="ghost">Opções</button>
+    </div>
+
+    <footer class="foot">
+      <span id="privacy">100% local · nenhuma requisição de rede</span>
+      <span class="mono small" id="version"></span>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

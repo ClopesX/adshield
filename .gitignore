@@ -1,0 +1,20 @@
+# Dependências e artefatos locais
+node_modules/
+data/cache/
+_metadata/
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Perfis temporários dos testes
+_e2e-profile/
+*.crx
+*.pem

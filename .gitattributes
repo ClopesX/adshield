@@ -1,0 +1,15 @@
+# Normaliza fim de linha entre Windows/Linux e marca binários
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.woff binary
+*.woff2 binary
+
+*.json text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.yml text eol=lf

@@ -1,0 +1,37 @@
+/*
+ * AdShield — ocultação dos anúncios visuais do YouTube.
+ * Registrado junto com src/content/youtube-main.js (mundo MAIN, youtube.com).
+ */
+
+#masthead-ad,
+#player-ads,
+#panels-full-bleed-container,
+ytd-statement-banner-renderer,
+ytd-banner-promo-renderer,
+ytd-in-feed-ad-layout-renderer,
+ytd-ad-slot-renderer,
+ytd-display-ad-renderer,
+ytd-promoted-sparkles-web-renderer,
+ytd-promoted-video-renderer,
+ytd-companion-slot-renderer,
+ytd-action-companion-ad-renderer,
+ytd-merch-shelf-renderer,
+ytm-companion-slot,
+ytm-promoted-sparkles-web-renderer,
+.adslot-detail,
+.video-ads .ytp-ad-module,
+.ytp-ad-overlay-slot,
+.ytp-ad-overlay-container,
+.ytp-ad-progress-list,
+.ytp-ad-player-overlay-layout,
+.ytp-featured-product,
+.ytp-suggested-action,
+.ytp-inline-preview-ui {
+  display: none !important;
+}
+
+/* O botão "Pular" é clicado por script; esconder o resto da UI de anúncio. */
+.ytp-ad-text,
+.ytp-ad-preview-container {
+  display: none !important;
+}

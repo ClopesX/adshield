@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>AdShield — Opções</title>
+    <link rel="stylesheet" href="../ui/theme.css" />
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <header class="top">
+      <img src="../../icons/icon48.png" alt="" width="36" height="36" />
+      <div>
+        <h1>AdShield</h1>
+        <p class="small muted">Bloqueador próprio, 100% local. Nenhuma requisição sai do navegador.</p>
+      </div>
+      <span class="pill" id="privacyPill"><span class="dot"></span> sem telemetria</span>
+    </header>
+
+    <main>
+      <section class="card">
+        <div class="row spread">
+          <h2>Resumo</h2>
+          <button id="resetStats" class="ghost small">zerar contadores</button>
+        </div>
+        <div class="stats" id="stats">
+          <div><div class="big" id="statTotal">–</div><div class="small muted">bloqueios no total</div></div>
+          <div><div class="big" id="statToday">–</div><div class="small muted">hoje</div></div>
+          <div><div class="big" id="statDays">–</div><div class="small muted">dias registrados</div></div>
+        </div>
+        <table class="top-domains" id="topDomains"></table>
+      </section>
+
+      <section class="card">
+        <div class="row spread">
+          <h2>Listas de filtros</h2>
+          <span class="small muted" id="builtAt"></span>
+        </div>
+        <div id="lists"></div>
+        <div id="compileStats" class="small muted"></div>
+        <p class="small muted note">
+          As listas são compiladas para o formato do Chrome por <code>node tools/build.mjs</code>. Depois de
+          rodar o build, clique em <em>Recarregar</em> na página de extensões para aplicar.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Filtros personalizados</h2>
+        <p class="small muted">Uma regra por linha, no formato Adblock Plus (a mesma sintaxe do EasyList).</p>
+        <textarea id="customFilters" spellcheck="false" placeholder="||exemplo.com^&#10;##.banner-chato&#10;@@||meusite.com^$document"></textarea>
+        <div class="row spread">
+          <span class="small muted" id="customResult"></span>
+          <button id="saveFilters" class="primary">Aplicar filtros</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Assinaturas de lista</h2>
+        <p class="small muted">
+          Adiciona listas extras por URL (ex.: listas regionais). As regras entram no orçamento de regras
+          dinâmicas do Chrome, então listas grandes são truncadas.
+        </p>
+        <div class="row">
+          <input type="url" id="subUrl" placeholder="https://exemplo.com/lista.txt" />
+          <button id="addSub" class="primary">Adicionar</button>
+        </div>
+        <ul class="subs" id="subs"></ul>
+      </section>
+
+      <section class="card">
+        <h2>Exceções (sites liberados)</h2>
+        <p class="small muted">Nada é bloqueado nos domínios abaixo — inclui subdomínios.</p>
+        <div class="row">
+          <input type="text" id="allowInput" placeholder="exemplo.com" />
+          <button id="addAllow" class="primary">Liberar site</button>
+        </div>
+        <ul class="subs" id="allowlist"></ul>
+      </section>
+
+      <section class="card">
+        <h2>Configurações</h2>
+        <div class="row spread setting">
+          <div><strong>Ocultar elementos</strong><div class="small muted">Regras cosméticas do EasyList</div></div>
+          <label class="switch"><input type="checkbox" id="optCosmetic" /><span></span></label>
+        </div>
+        <div class="row spread setting">
+          <div><strong>Bloqueio no YouTube</strong><div class="small muted">Regras específicas do player</div></div>
+          <label class="switch"><input type="checkbox" id="optYoutube" /><span></span></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Privacidade</h2>
+        <ul class="checklist">
+          <li>Nenhum dado sai deste navegador: sem contas, sem analytics, sem servidor de log.</li>
+          <li>O contador é local e fica em <code>chrome.storage.local</code>.</li>
+          <li>A única rede possível é baixar uma assinatura que <em>você</em> adicionar.</li>
+          <li>Código audível em <code>ADSHIELD/src</code> — sem ofuscação e sem código remoto.</li>
+        </ul>
+        <div class="row">
+          <button id="exportConfig" class="ghost">Exportar configuração</button>
+          <button id="importConfig" class="ghost">Importar configuração</button>
+          <input type="file" id="importFile" accept="application/json" hidden />
+        </div>
+      </section>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>

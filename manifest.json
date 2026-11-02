@@ -1,0 +1,64 @@
+{
+  "manifest_version": 3,
+  "name": "AdShield",
+  "version": "1.2.0",
+  "description": "Bloqueador de anúncios e rastreadores 100% local. Sem telemetria, sem conta, sem servidor.",
+  "minimum_chrome_version": "120",
+  "permissions": [
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback",
+    "storage",
+    "tabs",
+    "scripting",
+    "contextMenus",
+    "alarms"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "AdShield",
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      { "id": "base-1", "enabled": true, "path": "rules/base-1.json" },
+      { "id": "base-2", "enabled": true, "path": "rules/base-2.json" },
+      { "id": "base-3", "enabled": true, "path": "rules/base-3.json" },
+      { "id": "base-4", "enabled": true, "path": "rules/base-4.json" },
+      { "id": "base-5", "enabled": true, "path": "rules/base-5.json" },
+      { "id": "base-6", "enabled": true, "path": "rules/base-6.json" },
+      { "id": "youtube", "enabled": true, "path": "rules/youtube.json" }
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["src/content/cosmetic.js"],
+      "css": ["rules/cosmetic-generic.css"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ]
+}
+
+

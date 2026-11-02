@@ -155,9 +155,9 @@ interface desta versão.
 
 ## Como reproduzir
 
-O código-fonte recuperado está em `_REA-ADBLOCK/recovered/` (590 arquivos) e a lista de hosts
-encontrados em `_REA-ADBLOCK/evidence/hosts.json`. A cópia bruta do pacote (297 MB) foi removida
-depois da auditoria; para refazer:
+O código-fonte recuperado (590 arquivos) e a lista de hosts encontrados ficaram **apenas na máquina
+local** (`_REA-ADBLOCK/`), fora deste repositório: é código de terceiros, redistribuí-lo exigiria
+cuidado com a licença e não é necessário para usar o AdShield. Para refazer a extração:
 
 ```powershell
 # 1. copiar o pacote instalado
@@ -173,4 +173,5 @@ arquivo. A fase de AST (`parse_javascript_source`) **não** completou nesta máq
 grava um arquivo temporário próprio e o sandbox do DSH nega a escrita (`EPERM` em
 `rea-javascript-analysis-*/*.source`, mesmo com `TMP` dentro do workspace). O trabalho seguiu pelos
 *source maps* do pacote, que trazem o TypeScript original — resultado mais fiel que o AST.
+
 

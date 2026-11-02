@@ -18,3 +18,7 @@ desktop.ini
 _e2e-profile/
 *.crx
 *.pem
+
+# Pacotes de release
+dist/
+

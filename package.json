@@ -1,6 +1,6 @@
 {
   "name": "adshield",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "Bloqueador de anúncios próprio (MV3), 100% local, sem telemetria.",
   "type": "module",
@@ -11,10 +11,12 @@
     "icons": "node tools/icons.mjs",
     "test": "node tests/abp.test.mjs",
     "check": "node tools/check.mjs",
+    "release": "node tools/release.mjs",
     "e2e": "node tools/e2e.mjs",
     "youtube": "node tools/youtube-check.mjs",
     "screenshots": "node tools/screenshots.mjs"
   },
   "license": "GPL-3.0-or-later"
 }
+
 

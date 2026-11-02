@@ -31,8 +31,8 @@ arquitetura comparada em [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
 
 ## Instalar
 
-**Jeito rápido (sem compilar):** baixe `adshield-1.2.0.zip` em [Releases](../../releases), descompacte
-e carregue a pasta.
+**Jeito rápido (sem compilar):** baixe o `.zip` da [release mais recente](../../releases/latest),
+descompacte e carregue a pasta.
 
 **Do código:**
 
@@ -166,5 +166,37 @@ ADSHIELD/
 
 Detalhes e atribuições completas: [ATTRIBUTION.md](ATTRIBUTION.md).
 
+## Publicar uma atualização
 
+Tudo em um comando (versão, testes, zip, commit, push, tag e release):
+
+```bash
+npm run release              # 1.2.0 → 1.2.1
+npm run release -- minor     # 1.2.0 → 1.3.0
+npm run release -- none --refresh   # mesma versão, só atualiza o zip da release
+npm run release -- patch --dry-run  # mostra o que faria, sem enviar nada
+```
+
+O script `tools/release.mjs` faz, na ordem:
+
+1. sobe `version` no `manifest.json` e no `package.json`;
+2. roda os 20 testes e o `tools/check.mjs` (aborta se algo estiver inconsistente);
+3. monta `dist/adshield-<versão>.zip` com a extensão pronta para instalar;
+4. `git add -A` + commit `release: v<versão>` + `git push`;
+5. cria a tag `v<versão>` e a release no GitHub com o zip anexado — se a tag já existir, só troca o
+   arquivo (`--clobber`).
+
+Pré-requisitos: `git` e `gh` no PATH, com `gh auth login` feito. No Windows:
+`winget install Git.Git GitHub.cli`.
+
+Se preferir fazer na mão, o equivalente é:
+
+```bash
+# 1. edite "version" em manifest.json e package.json
+node tests/abp.test.mjs && node tools/check.mjs
+# 2. o zip sai de tools/release.mjs; ou use a interface do GitHub para anexar
+git add -A && git commit -m "release: v1.2.1" && git push
+git tag -a v1.2.1 -m "AdShield 1.2.1" && git push origin v1.2.1
+gh release create v1.2.1 dist/adshield-1.2.1.zip --title "AdShield 1.2.1" --notes "..."
+```
 

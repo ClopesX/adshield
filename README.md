@@ -1,5 +1,9 @@
 # AdShield
 
+[![CI](https://github.com/ClopesX/adshield/actions/workflows/ci.yml/badge.svg)](https://github.com/ClopesX/adshield/actions/workflows/ci.yml)
+[![Licença: GPL-3.0](https://img.shields.io/badge/licen%C3%A7a-GPL--3.0-blue.svg)](LICENSE)
+[![Chrome MV3](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4.svg)](manifest.json)
+
 Bloqueador de anúncios e rastreadores para Chrome, Manifest V3, **100% local**.
 Sem conta, sem telemetria, sem servidor — o código é legível do começo ao fim.
 
@@ -27,12 +31,24 @@ arquitetura comparada em [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
 
 ## Instalar
 
+**Jeito rápido (sem compilar):** baixe `adshield-1.2.0.zip` em [Releases](../../releases), descompacte
+e carregue a pasta.
+
+**Do código:**
+
+```bash
+git clone https://github.com/ClopesX/adshield.git
+cd adshield
+```
+
+Depois, nos dois casos:
+
 1. `chrome://extensions`
 2. Ligar **Modo do desenvolvedor**
-3. **Carregar sem compactação** → escolha a pasta `ADSHIELD`
-4. A primeira ativação leva alguns segundos (as regras são carregadas pelo Chrome)
+3. **Carregar sem compactação** → escolha a pasta do AdShield (a que tem o `manifest.json`)
+4. A primeira ativação leva alguns segundos (o Chrome carrega as regras)
 
-Se você não quer compilar nada, a pasta já vem com as regras geradas em `rules/`.
+As regras já vêm geradas em `rules/` — só rode `node tools/build.mjs` se quiser atualizar as listas.
 
 ## Recompilar as listas
 
@@ -149,4 +165,6 @@ ADSHIELD/
   usa as marcas no nome ou nos ícones.
 
 Detalhes e atribuições completas: [ATTRIBUTION.md](ATTRIBUTION.md).
+
+
 

@@ -24,7 +24,8 @@ arquitetura comparada em [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
 | Pausar tudo / pausar site / pausar aba | global, persistente e temporária |
 | Filtros personalizados (sintaxe ABP) | até 2.500 regras dinâmicas |
 | Assinaturas por URL | até 2.500 regras, atualização diária |
-| Bloquear elemento (seletor visual) | menu de contexto ou popup |
+| Bloquear elemento (seletor visual) | menu de contexto ou popup, com **Desfazer** no aviso |
+| Ver e remover o que você bloqueou | Opções → *Ocultação personalizada* |
 | Página de opções e estatísticas | sim |
 | Exportar/importar configuração | sim |
 | Telemetria, contas, rede | **nenhuma** (exceto baixar assinatura que você adicionar) |
@@ -64,7 +65,7 @@ Depois de compilar, clique em **Recarregar** na página de extensões.
 ## Verificar
 
 ```bash
-node tests/abp.test.mjs   # 20 testes do compilador ABP → DNR
+npm test                  # 20 testes do compilador + 7 de domínio
 node tools/check.mjs      # manifest, arquivos e todas as regras
 node tools/e2e.mjs        # Chrome real: bloqueio, ocultação, contador, popup, opções
 node tools/youtube-check.mjs    # YouTube real: compara o player com e sem a extensão
@@ -199,4 +200,5 @@ git add -A && git commit -m "release: v1.2.1" && git push
 git tag -a v1.2.1 -m "AdShield 1.2.1" && git push origin v1.2.1
 gh release create v1.2.1 dist/adshield-1.2.1.zip --title "AdShield 1.2.1" --notes "..."
 ```
+
 

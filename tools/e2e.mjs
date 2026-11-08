@@ -335,6 +335,72 @@ async function main() {
       cdp.close();
     }
 
+    // 4) Ocultação personalizada: criar regra e removê-la pela interface —
+    //    é o fluxo que antes não existia (regra ficava invisível).
+    if (extensionId) {
+      const optionsTarget = await browserCdp.send('Target.createTarget', { url: optionsUrl });
+      const optionsPage = await findTarget((target) => String(target.url) === optionsUrl, 10000);
+      check('página de opções abre para o teste de ocultação', Boolean(optionsPage), optionsUrl.split('/').pop());
+
+      if (optionsPage) {
+        const pageCdp = new Cdp(optionsPage.webSocketDebuggerUrl);
+        await pageCdp.connect();
+        await pageCdp.send('Runtime.enable');
+        await sleep(600);
+
+        const created = await pageCdp.evaluate(`(async () => {
+          const response = await chrome.runtime.sendMessage({
+            type: 'pickElement',
+            selector: 'div.adshield-teste-remover',
+            host: 'exemplo.com.br',
+          });
+          return response && response.ok ? response.result.domain : String(response && response.error);
+        })()`);
+        check('regra criada pelo seletor', created === 'exemplo.com.br', String(created));
+
+        await pageCdp.send('Page.enable').catch(() => {});
+        await pageCdp.send('Page.reload', { ignoreCache: true });
+        await sleep(1500);
+
+        const listed = await pageCdp.evaluate(`(() => {
+          const text = document.body.innerText;
+          return {
+            aparece: text.includes('adshield-teste-remover'),
+            dominio: text.includes('exemplo.com.br'),
+            vazio: text.includes('Nenhum elemento bloqueado'),
+          };
+        })()`);
+        check(
+          'regra aparece na lista de ocultação',
+          listed.aparece && listed.dominio && !listed.vazio,
+          `aparece=${listed.aparece} dominio=${listed.dominio}`,
+        );
+
+        const removed = await pageCdp.evaluate(`(async () => {
+          const buttons = [...document.querySelectorAll('button')].filter((b) => b.textContent.trim() === 'remover');
+          for (const button of buttons) {
+            const row = button.closest('.list-row');
+            if (row && row.textContent.includes('adshield-teste-remover')) {
+              button.click();
+              return true;
+            }
+          }
+          return false;
+        })()`);
+        check('botão remover encontrado na lista', removed === true, String(removed));
+        await sleep(1200);
+
+        const stillThere = await pageCdp.evaluate(
+          "document.body.innerText.includes('adshield-teste-remover')",
+        );
+        check('regra removida da interface', stillThere === false, `ainda aparece: ${stillThere}`);
+        pageCdp.close();
+      }
+      if (optionsTarget?.targetId) {
+        await browserCdp.send('Target.closeTarget', { targetId: optionsTarget.targetId }).catch(() => {});
+      }
+    }
+
     // 3) Sanitizador do YouTube: registrado como content script MAIN e limpa
     //    a resposta do player antes da página usá-la.
     if (serviceWorker && extensionId) {

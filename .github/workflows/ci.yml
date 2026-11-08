@@ -18,7 +18,7 @@ jobs:
           node-version: 22
 
       - name: Testes do compilador ABP → DNR
-        run: node tests/abp.test.mjs
+        run: npm test
 
       - name: Manifest, arquivos e regras
         run: node tools/check.mjs
@@ -41,3 +41,4 @@ jobs:
 
       - name: e2e (bloqueio, ocultação, contador, popup, opções)
         run: node tools/e2e.mjs
+

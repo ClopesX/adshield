@@ -19,25 +19,41 @@
   /* Ocultação de elementos                                              */
   /* ------------------------------------------------------------------ */
 
-  function applySelectors(selectors) {
-    if (!selectors.length) return;
+  /** Seletores aplicados agora nesta página (permite desfazer sem recarregar). */
+  const appliedRules = new Set();
+
+  function renderStyle() {
     let style = document.getElementById(STYLE_ID);
+    if (!appliedRules.size) {
+      if (style) style.textContent = '';
+      return;
+    }
     if (!style) {
       style = document.createElement('style');
       style.id = STYLE_ID;
       (document.head || document.documentElement).appendChild(style);
     }
-    style.textContent = selectors
+    style.textContent = [...appliedRules]
       .map((selector) => `${selector} { display: none !important; }`)
       .join('\n');
+  }
+
+  function addRules(selectors) {
+    for (const selector of selectors) if (selector) appliedRules.add(selector);
+    renderStyle();
+  }
+
+  function removeRule(selector) {
+    appliedRules.delete(selector);
+    renderStyle();
   }
 
   function hideNow(selectors) {
     if (!selectors.length) return;
     if (document.documentElement) {
-      applySelectors(selectors);
+      addRules(selectors);
     } else {
-      document.addEventListener('readystatechange', () => applySelectors(selectors), { once: true });
+      document.addEventListener('readystatechange', () => addRules(selectors), { once: true });
     }
   }
 
@@ -80,6 +96,54 @@
     ].join(';');
     (document.body || document.documentElement).appendChild(node);
     setTimeout(() => node.remove(), 2600);
+  }
+
+  /** Aviso com botão "Desfazer" (fica 9 s na tela). */
+  function undoToast(text, onUndo) {
+    const node = document.createElement('div');
+    node.style.cssText = [
+      'position:fixed',
+      'right:16px',
+      'bottom:16px',
+      'z-index:2147483647',
+      'background:#111827',
+      'color:#f9fafb',
+      'font:13px/1.4 system-ui,sans-serif',
+      'padding:10px 12px',
+      'border-radius:8px',
+      'box-shadow:0 8px 24px rgba(0,0,0,.35)',
+      'display:flex',
+      'gap:10px',
+      'align-items:center',
+      'max-width:min(460px,90vw)',
+    ].join(';');
+
+    const label = document.createElement('span');
+    label.textContent = text;
+    label.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+
+    const button = document.createElement('button');
+    button.textContent = 'Desfazer';
+    button.style.cssText =
+      'background:#2f6fed;color:#fff;border:0;border-radius:6px;padding:5px 12px;cursor:pointer;font:inherit;flex:0 0 auto';
+
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      node.remove();
+    };
+
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      finish();
+      void onUndo();
+    });
+
+    node.append(label, button);
+    (document.body || document.documentElement).appendChild(node);
+    setTimeout(finish, 9000);
   }
 
   function selectorFor(element) {
@@ -180,12 +244,38 @@
       return;
     }
 
-    applySelectors([selector]);
-    toast(`AdShield: bloqueado (${selector.slice(0, 60)})`);
-    void chrome.runtime.sendMessage({
-      type: 'pickElement',
-      selector,
-      host: location.hostname,
+    addRules([selector]);
+    void savePick(selector);
+  }
+
+  /**
+   * Salva a regra e mostra o aviso com "Desfazer" — antes a regra era aplicada
+   * em silêncio e não havia como ver ou remover depois.
+   */
+  async function savePick(selector) {
+    let domain = '';
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'pickElement',
+        selector,
+        host: location.hostname,
+      });
+      if (response?.ok) domain = response.result.domain || '';
+      if (!response?.ok) throw new Error(response?.error || 'falha ao salvar');
+    } catch (error) {
+      removeRule(selector);
+      toast(`AdShield: não consegui salvar (${error.message}).`);
+      return;
+    }
+
+    undoToast(`AdShield: elemento bloqueado (${selector.slice(0, 42)}${selector.length > 42 ? '…' : ''})`, async () => {
+      removeRule(selector);
+      try {
+        await chrome.runtime.sendMessage({ type: 'undoPick', domain, selector });
+        toast('AdShield: bloqueio desfeito.');
+      } catch {
+        toast('AdShield: desfeito nesta página; recarregue se voltar.');
+      }
     });
   }
 

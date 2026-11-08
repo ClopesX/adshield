@@ -126,8 +126,9 @@ async function main() {
     await writeFile(packagePath, packageRaw.replace(/"version":\s*"[^"]+"/, `"version": "${nextVersion}"`), 'utf8');
   }
 
-  console.log('[1/5] testes do compilador');
+  console.log('[1/5] testes');
   run(process.execPath, [join(ROOT, 'tests', 'abp.test.mjs')]);
+  run(process.execPath, [join(ROOT, 'tests', 'domain.test.mjs')]);
   console.log('[2/5] manifest, arquivos e regras');
   run(process.execPath, [join(ROOT, 'tools', 'check.mjs')]);
 
@@ -178,3 +179,4 @@ main().catch((error) => {
   console.error(`\n[erro] ${error.message}`);
   process.exitCode = 1;
 });
+

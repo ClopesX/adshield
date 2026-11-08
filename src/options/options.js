@@ -140,6 +140,41 @@ function renderAllowlist(allowlist) {
   }
 }
 
+/** Regras criadas com "Bloquear elemento" — antes ficavam invisíveis. */
+function renderCustomCosmetic(customCosmetic) {
+  const list = $('customCosmeticList');
+  list.textContent = '';
+  const entries = Object.entries(customCosmetic || {});
+  let total = 0;
+
+  for (const [domain, selectors] of entries.sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+    for (const selector of selectors || []) {
+      total += 1;
+      const name = el('div', 'name mono truncate', domain);
+      name.title = domain;
+      const code = el('div', 'small muted truncate', selector);
+      code.title = selector;
+      const remove = el('button', 'ghost small', 'remover');
+      remove.addEventListener('click', async () => {
+        remove.disabled = true;
+        try {
+          await send('removeCustomCosmetic', { domain, selector });
+          await load();
+        } catch (error) {
+          alert(`Erro ao remover: ${error.message}`);
+          remove.disabled = false;
+        }
+      });
+      list.append(row(labeled(name, code), remove));
+    }
+  }
+
+  if (!total) {
+    list.append(el('li', 'small muted', 'Nenhum elemento bloqueado por você.'));
+  }
+  $('clearCosmetic').disabled = total === 0;
+}
+
 /* ------------------------------------------------------------------ */
 
 let currentInfo = null;
@@ -152,6 +187,7 @@ async function load() {
   renderLists(info.report);
   renderSubs(info.subscriptions || []);
   renderAllowlist(currentInfo.allowlist);
+  renderCustomCosmetic(info.customCosmetic);
 
   $('customFilters').value = info.customFilters || '';
   $('optCosmetic').checked = Boolean(state.settings.cosmetic);
@@ -218,6 +254,18 @@ $('optCosmetic').addEventListener('change', async (event) => {
 $('optYoutube').addEventListener('change', async (event) => {
   await send('updateSettings', { patch: { youtube: event.target.checked } });
   await load();
+});
+
+$('clearCosmetic').addEventListener('click', async () => {
+  const button = $('clearCosmetic');
+  button.disabled = true;
+  try {
+    await send('clearCustomCosmetic', {});
+    await load();
+  } catch (error) {
+    alert(`Erro: ${error.message}`);
+    button.disabled = false;
+  }
 });
 
 $('resetStats').addEventListener('click', async () => {

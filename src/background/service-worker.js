@@ -13,6 +13,7 @@
  */
 
 import { compileText, validateDnrRule } from '../common/abp.js';
+import { hostCandidates, registrableDomain } from '../common/domain.js';
 
 /**
  * Rulesets vêm do manifest: as listas de rede ficam em várias partes
@@ -330,13 +331,6 @@ async function loadCosmetic() {
   return cosmeticCache;
 }
 
-function hostCandidates(host) {
-  const parts = host.split('.');
-  const result = [];
-  for (let i = 0; i < parts.length - 1; i++) result.push(parts.slice(i).join('.'));
-  return result;
-}
-
 async function cosmeticFor(host, settings) {
   if (!settings.cosmetic || !host) return { hide: [], unhide: [] };
   const { domains, unhide } = await loadCosmetic();
@@ -362,15 +356,44 @@ async function cosmeticFor(host, settings) {
   return { hide: hideList, unhide: [...unhideSet] };
 }
 
-async function addCustomCosmetic(host, selector) {
+async function readCustomCosmetic() {
   const stored = await chrome.storage.local.get(STORAGE.customCosmetic);
-  const custom = stored[STORAGE.customCosmetic] || {};
-  const base = hostCandidates(host).pop() || host;
+  return stored[STORAGE.customCosmetic] || {};
+}
+
+async function writeCustomCosmetic(custom) {
+  const clean = {};
+  for (const [domain, selectors] of Object.entries(custom)) {
+    const list = [...new Set(selectors)].filter((selector) => typeof selector === 'string' && selector);
+    if (list.length) clean[domain] = list;
+  }
+  await chrome.storage.local.set({ [STORAGE.customCosmetic]: clean });
+  return clean;
+}
+
+async function addCustomCosmetic(host, selector) {
+  const custom = await readCustomCosmetic();
+  const base = registrableDomain(host) || host;
   const target = custom[base] || [];
   if (!target.includes(selector)) target.push(selector);
   custom[base] = target;
-  await chrome.storage.local.set({ [STORAGE.customCosmetic]: custom });
-  return custom;
+  const next = await writeCustomCosmetic(custom);
+  return { domain: base, selectors: next[base] || [], customCosmetic: next };
+}
+
+async function deleteCosmeticRule(domain, selector) {
+  const custom = await readCustomCosmetic();
+  if (Array.isArray(custom[domain])) {
+    custom[domain] = custom[domain].filter((item) => item !== selector);
+  }
+  return writeCustomCosmetic(custom);
+}
+
+async function deleteCosmeticRules(domain) {
+  const custom = await readCustomCosmetic();
+  if (domain) delete custom[domain];
+  else for (const key of Object.keys(custom)) delete custom[key];
+  return writeCustomCosmetic(custom);
 }
 
 /* ------------------------------------------------------------------ */
@@ -543,8 +566,29 @@ const handlers = {
     const tabId = message.tabId ?? sender.tab?.id ?? -1;
     const host = message.host || (sender.tab ? hostFromUrl(sender.tab.url || '') : '');
     if (!host || !message.selector) throw new Error('seleção inválida');
-    await addCustomCosmetic(host, message.selector);
-    return { ok: true, tabId };
+    const result = await addCustomCosmetic(host, message.selector);
+    return { ok: true, tabId, domain: result.domain, selectors: result.selectors };
+  },
+
+  async undoPick(message) {
+    const domain = String(message.domain || '');
+    const selector = String(message.selector || '');
+    if (!domain || !selector) throw new Error('regra inválida');
+    const customCosmetic = await deleteCosmeticRule(domain, selector);
+    return { ok: true, customCosmetic };
+  },
+
+  async removeCustomCosmetic(message) {
+    const domain = String(message.domain || '');
+    const selector = String(message.selector || '');
+    if (!domain || !selector) throw new Error('regra inválida');
+    const customCosmetic = await deleteCosmeticRule(domain, selector);
+    return { ok: true, customCosmetic };
+  },
+
+  async clearCustomCosmetic(message) {
+    const customCosmetic = await deleteCosmeticRules(message.domain ? String(message.domain) : '');
+    return { ok: true, customCosmetic };
   },
 
   async stats() {
@@ -720,3 +764,6 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 installCounter();
 void bootstrap().catch((error) => console.error('[AdShield] bootstrap inicial:', error));
+
+
+

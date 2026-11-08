@@ -155,6 +155,23 @@ async function main() {
   } else {
     console.log('      nada novo para commitar');
   }
+
+  // O remoto pode ter avançado (upload feito pelo site, edição no navegador,
+  // outra máquina). Sincroniza antes de enviar, senão o push é recusado depois
+  // do commit já feito.
+  run(GIT, ['fetch', 'origin', branch]);
+  const behind = Number(output(GIT, ['rev-list', '--count', `HEAD..origin/${branch}`]) || '0');
+  if (behind > 0) {
+    console.log(`      remoto à frente por ${behind} commit(s); aplicando rebase…`);
+    const rebase = spawnSync(GIT, ['rebase', `origin/${branch}`], { cwd: ROOT, stdio: 'inherit' });
+    if (rebase.status !== 0) {
+      spawnSync(GIT, ['rebase', '--abort'], { cwd: ROOT, stdio: 'inherit' });
+      throw new Error(
+        'não consegui aplicar seu commit sobre o remoto. O commit local foi preservado: ' +
+          'resolva os conflitos manualmente e rode `npm run release -- none` para terminar tag e release.',
+      );
+    }
+  }
   run(GIT, ['push', 'origin', branch]);
 
   console.log('[5/5] tag e release no GitHub');

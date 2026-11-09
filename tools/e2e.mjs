@@ -145,6 +145,32 @@ const PAGE_HTML = `<!doctype html>
   </body>
 </html>`;
 
+/**
+ * Página que imita o caso real do YouTube: um overlay em tela cheia que trava
+ * o scroll do body e que o site recria depois de 1,5 s. É o cenário em que
+ * `display:none` não resolve — só removendo o nó do DOM.
+ */
+const OVERLAY_HTML = `<!doctype html>
+<html lang="pt-BR">
+  <head><meta charset="utf-8"><title>overlay</title></head>
+  <body>
+    <p id="content">conteúdo</p>
+    <div id="adshield-overlay" style="position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6)">
+      overlay que trava o scroll
+    </div>
+    <script>
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => {
+        const again = document.createElement('div');
+        again.id = 'adshield-overlay';
+        again.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6)';
+        document.body.append(again);
+        document.body.style.overflow = 'hidden';
+      }, 1500);
+    </script>
+  </body>
+</html>`;
+
 async function findTarget(predicate, timeoutMs = 15000) {
   const deadline = Date.now() + timeoutMs;
   let targets = [];
@@ -170,7 +196,7 @@ async function main() {
   const logPath = join(profile, 'chrome.log');
   const server = createServer((request, response) => {
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    response.end(PAGE_HTML);
+    response.end(String(request.url || '').startsWith('/overlay') ? OVERLAY_HTML : PAGE_HTML);
   });
   await new Promise((resolve) => server.listen(HTTP_PORT, '127.0.0.1', resolve));
 
@@ -394,6 +420,83 @@ async function main() {
           "document.body.innerText.includes('adshield-teste-remover')",
         );
         check('regra removida da interface', stillThere === false, `ainda aparece: ${stillThere}`);
+
+        // Modo "remover": o caso do overlay que trava o scroll e é recriado.
+        const stored = await pageCdp.evaluate(`(async () => {
+          const response = await chrome.runtime.sendMessage({
+            type: 'pickElement',
+            host: '127.0.0.1',
+            selector: '#adshield-overlay',
+            mode: 'remove',
+          });
+          const data = await chrome.storage.local.get('customCosmetic');
+          return { ok: Boolean(response && response.ok), custom: data.customCosmetic };
+        })()`);
+        check(
+          'regra criada no modo remover',
+          stored.ok && stored.custom?.['127.0.0.1']?.['#adshield-overlay'] === 'remove',
+          JSON.stringify(stored.custom || null).slice(0, 90),
+        );
+
+        const overlayTarget = await browserCdp.send('Target.createTarget', {
+          url: `http://127.0.0.1:${HTTP_PORT}/overlay`,
+        });
+        const overlayPage = await findTarget((target) => String(target.url).includes('/overlay'), 12000);
+        check('página com overlay abriu', Boolean(overlayPage), overlayPage?.url || 'não abriu');
+
+        if (overlayPage) {
+          const overlayCdp = new Cdp(overlayPage.webSocketDebuggerUrl);
+          await overlayCdp.connect();
+          await overlayCdp.send('Runtime.enable');
+          await sleep(1400);
+
+          const first = await overlayCdp.evaluate(
+            "Boolean(document.getElementById('adshield-overlay'))",
+          );
+          check('overlay removido do DOM', first === false, `ainda existe: ${first}`);
+
+          // O site recria o overlay 1,5 s depois; o observador precisa pegar.
+          await sleep(2600);
+          const second = await overlayCdp.evaluate(`({
+            existe: Boolean(document.getElementById('adshield-overlay')),
+            overflow: document.body.style.overflow || '',
+            scrollY: window.scrollY,
+          })`);
+          check('overlay recriado também é removido', second.existe === false, `reapareceu: ${second.existe}`);
+          check('scroll liberado', second.overflow !== 'hidden', `overflow="${second.overflow}"`);
+          overlayCdp.close();
+        }
+        await browserCdp.send('Target.closeTarget', { targetId: overlayTarget.targetId }).catch(() => {});
+
+        // Formato antigo ({dominio: ["seletor"]}) precisa continuar funcionando.
+        await pageCdp.evaluate(
+          `chrome.storage.local.set({ customCosmetic: { '127.0.0.1': ['#adshield-overlay'] } })`,
+        );
+        const legacyTarget = await browserCdp.send('Target.createTarget', {
+          url: `http://127.0.0.1:${HTTP_PORT}/overlay?legacy=1`,
+        });
+        const legacyPage = await findTarget((target) => String(target.url).includes('legacy=1'), 12000);
+        if (legacyPage) {
+          const legacyCdp = new Cdp(legacyPage.webSocketDebuggerUrl);
+          await legacyCdp.connect();
+          await legacyCdp.send('Runtime.enable');
+          await sleep(1500);
+          const legacy = await legacyCdp.evaluate(`(() => {
+            const node = document.getElementById('adshield-overlay');
+            return { existe: Boolean(node), display: node ? getComputedStyle(node).display : null };
+          })()`);
+          check(
+            'formato antigo vira modo esconder',
+            legacy.existe === true && legacy.display === 'none',
+            `existe=${legacy.existe} display=${legacy.display}`,
+          );
+          legacyCdp.close();
+        }
+        await browserCdp.send('Target.closeTarget', { targetId: legacyTarget.targetId }).catch(() => {});
+
+        await pageCdp.evaluate("chrome.runtime.sendMessage({ type: 'clearCustomCosmetic' })");
+        await sleep(300);
+
         pageCdp.close();
       }
       if (optionsTarget?.targetId) {

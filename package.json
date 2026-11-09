@@ -1,6 +1,6 @@
 {
   "name": "adshield",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "description": "Bloqueador de anúncios próprio (MV3), 100% local, sem telemetria.",
   "type": "module",

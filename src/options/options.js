@@ -140,20 +140,48 @@ function renderAllowlist(allowlist) {
   }
 }
 
-/** Regras criadas com "Bloquear elemento" — antes ficavam invisíveis. */
+/** Regras criadas com "Bloquear elemento", com o modo de cada uma. */
 function renderCustomCosmetic(customCosmetic) {
   const list = $('customCosmeticList');
   list.textContent = '';
   const entries = Object.entries(customCosmetic || {});
   let total = 0;
 
-  for (const [domain, selectors] of entries.sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
-    for (const selector of selectors || []) {
+  const MODES = [
+    ['hide', 'Esconder (display: none)'],
+    ['remove', 'Remover da página'],
+  ];
+
+  for (const [domain, rules] of entries.sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+    for (const [selector, mode] of Object.entries(rules || {})) {
       total += 1;
       const name = el('div', 'name mono truncate', domain);
       name.title = domain;
       const code = el('div', 'small muted truncate', selector);
       code.title = selector;
+
+      const select = document.createElement('select');
+      select.className = 'mode-select';
+      select.title =
+        'Esconder: aplica display:none (o elemento continua na página). Remover: apaga o nó do DOM — use quando o elemento trava o scroll.';
+      for (const [value, label] of MODES) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        select.append(option);
+      }
+      select.value = mode === 'remove' ? 'remove' : 'hide';
+      select.addEventListener('change', async () => {
+        select.disabled = true;
+        try {
+          await send('setCosmeticMode', { domain, selector, mode: select.value });
+          await load();
+        } catch (error) {
+          alert(`Erro ao mudar o modo: ${error.message}`);
+          select.disabled = false;
+        }
+      });
+
       const remove = el('button', 'ghost small', 'remover');
       remove.addEventListener('click', async () => {
         remove.disabled = true;
@@ -165,7 +193,7 @@ function renderCustomCosmetic(customCosmetic) {
           remove.disabled = false;
         }
       });
-      list.append(row(labeled(name, code), remove));
+      list.append(row(labeled(name, code), select, remove));
     }
   }
 

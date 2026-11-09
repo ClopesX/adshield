@@ -43,7 +43,7 @@ tempo de execução. É isso que explica o tamanho: 40 MB de dados.
 | Tamanho do código | ~3,4 MB minificado + 40 MB de listas | ~2.400 linhas legíveis + 21 MB de regras |
 | Compilação de filtros | offline, no build da eyeo | `tools/build.mjs`, roda na sua máquina |
 | Regras de rede | 38 rulesets UUID, 3 ligados | 6 partes (25 mil regras cada) + YouTube |
-| Cobertura | subconjunto curado pela eyeo | EasyList + EasyPrivacy completos (105.361) |
+| Cobertura | subconjunto curado pela eyeo | EasyList + EasyPrivacy completos (105.669) |
 | Ocultação | genérica + por domínio + scriptlets | genérica + por domínio (sem scriptlets) |
 | Telemetria | Sentry + eyeometry + log server | nenhuma |
 | Contador | `webRequest` + estado próprio | `onRuleMatchedDebug` (modo desenvolvedor) |
@@ -66,16 +66,23 @@ libera **330.000** para extensões carregadas sem empacotar. O AdShield usa esse
 Para gerar um pacote publicável, use `node tools/build.mjs --budget 28000`.
 
 **3. Arquivos de 25 mil regras.** Um único arquivo de 27 MB atrasa a ativação; o Chrome carrega
-rulesets em paralelo. Com 6 partes, 105.361 regras ficam prontas em ~2,4 s.
+rulesets em paralelo. Com 6 partes, 105.669 regras ficam prontas em ~2,4 s.
 
 **4. Ordem de prioridade.** Exceções (`@@`) recebem `priority: 200`, bloqueios `1`, `$important`
 sobe para 300/400 e a allowlist do usuário usa `allowAllRequests` com `priority: 1000` — sempre
 acima de tudo. Pausa por aba usa `condition.tabIds`, que só existe em regras de sessão: por isso
 ela não sobrevive ao fechamento da aba, e isso é intencional.
 
-**5. Ocultação em dois níveis.** 13.637 seletores genéricos vão num CSS declarado no manifest
-(aplicado pelo Chrome antes da primeira pintura, sem JS); 7.546 domínios ficam num JSON consultado
+**5. Ocultação em dois níveis.** 13.782 seletores genéricos vão num CSS declarado no manifest
+(aplicado pelo Chrome antes da primeira pintura, sem JS); 8.288 domínios ficam num JSON consultado
 pelo service worker e injetado por content script em `document_start`.
+
+**5b. Duas formas de bloquear um elemento.** A regra criada pelo seletor tem um modo:
+`hide` aplica `display: none` (o nó continua no DOM) e `remove` apaga o nó. O segundo existe porque
+overlay em tela cheia continua segurando o scroll mesmo invisível — e, como o site recria esses nós,
+um `MutationObserver` remove de novo a cada aparição. Quando o nó removido cobre a viewport, o
+`overflow: hidden` que o site põe em `html`/`body` também é liberado, senão o scroll segue travado.
+O formato antigo (`{dominio: ["seletor"]}`) é migrado na leitura para `{dominio: {seletor: "hide"}}`.
 
 **6. Contador sem mentir.** `onRuleMatchedDebug` só existe em extensão desempacotada. Quando ele não
 está disponível, o popup diz isso ("contador exige modo desenvolvedor") em vez de mostrar números
@@ -186,4 +193,7 @@ navegador entrega 100%.
 - **Publicação na Web Store**: exigiria `--budget 28000`, senão o Chrome recusa o pacote.
 - **YouTube**: as 8 regras são conservadoras de propósito; mudanças no player quebram esse tipo de
   regra e a manutenção é manual.
+
+
+
 

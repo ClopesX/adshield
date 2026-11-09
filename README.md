@@ -17,15 +17,16 @@ arquitetura comparada em [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
 
 | Recurso | Situação |
 |---|---|
-| Bloqueio de rede (EasyList + EasyPrivacy) | 105.361 regras em 6 partes |
+| Bloqueio de rede (EasyList + EasyPrivacy) | 105.669 regras em 6 partes |
 | Bloqueio no YouTube | limpa `adPlacements` da resposta do player (mundo MAIN) + 8 regras de rede + CSS + auto-pular |
-| Ocultação de elementos | 13.637 seletores genéricos + 7.546 domínios |
+| Ocultação de elementos | 13.782 seletores genéricos + 8.288 domínios |
 | Contador por aba, por dia e por domínio | local (`chrome.storage.local`) |
 | Pausar tudo / pausar site / pausar aba | global, persistente e temporária |
 | Filtros personalizados (sintaxe ABP) | até 2.500 regras dinâmicas |
 | Assinaturas por URL | até 2.500 regras, atualização diária |
 | Bloquear elemento (seletor visual) | menu de contexto ou popup, com **Desfazer** no aviso |
 | Ver e remover o que você bloqueou | Opções → *Ocultação personalizada* |
+| Modo por regra | **esconder** (CSS) ou **remover da página** (apaga o nó do DOM) |
 | Página de opções e estatísticas | sim |
 | Exportar/importar configuração | sim |
 | Telemetria, contas, rede | **nenhuma** (exceto baixar assinatura que você adicionar) |
@@ -51,6 +52,22 @@ Depois, nos dois casos:
 
 As regras já vêm geradas em `rules/` — só rode `node tools/build.mjs` se quiser atualizar as listas.
 
+## Esconder ou remover um elemento
+
+**Bloquear elemento** (menu de contexto ou popup) cria a regra no modo **esconder**,
+`display: none !important`. Resolve a maioria dos casos.
+
+Alguns overlays continuam segurando o scroll mesmo invisíveis: o nó segue no DOM, com
+`position: fixed` e `overflow: hidden` no `body`. Para esses, abra
+**Opções → Ocultação personalizada**, ache a regra e troque o modo para **Remover da página**.
+O nó é apagado do DOM e, quando ele cobria a tela, o scroll é liberado. Como sites recriam esse tipo
+de elemento, um observador remove de novo a cada aparição.
+
+| Modo | O que faz | Quando usar |
+|---|---|---|
+| Esconder | `display: none` | banner, slot de anúncio, seção que não atrapalha |
+| Remover da página | apaga o nó do DOM | overlay/modal que trava o scroll ou captura cliques |
+
 ## Recompilar as listas
 
 ```bash
@@ -73,7 +90,7 @@ node tools/compare-youtube.mjs # AdBlock × AdShield no mesmo vídeo, lado a lad
 ```
 
 O `e2e` precisa de um Chrome instalado e de permissão para abrir um processo próprio (perfil
-temporário, sem tocar no seu perfil). Resultado da última execução: **18/18**.
+temporário, sem tocar no seu perfil). Resultado da última execução: **29/29**.
 
 ```
 ok  extensão carregada — cokllc…
@@ -200,5 +217,7 @@ git add -A && git commit -m "release: v1.2.1" && git push
 git tag -a v1.2.1 -m "AdShield 1.2.1" && git push origin v1.2.1
 gh release create v1.2.1 dist/adshield-1.2.1.zip --title "AdShield 1.2.1" --notes "..."
 ```
+
+
 
 

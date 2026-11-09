@@ -19,12 +19,16 @@
   /* Ocultação de elementos                                              */
   /* ------------------------------------------------------------------ */
 
-  /** Seletores aplicados agora nesta página (permite desfazer sem recarregar). */
-  const appliedRules = new Set();
+  /** Seletores que escondemos com CSS (display:none). */
+  const hideRules = new Set();
+  /** Seletores que tiramos do DOM (o elemento deixa de existir). */
+  const removeRules = new Set();
+  let removeObserver = null;
+  let removeTimer = null;
 
   function renderStyle() {
     let style = document.getElementById(STYLE_ID);
-    if (!appliedRules.size) {
+    if (!hideRules.size) {
       if (style) style.textContent = '';
       return;
     }
@@ -33,27 +37,116 @@
       style.id = STYLE_ID;
       (document.head || document.documentElement).appendChild(style);
     }
-    style.textContent = [...appliedRules]
+    style.textContent = [...hideRules]
       .map((selector) => `${selector} { display: none !important; }`)
       .join('\n');
   }
 
-  function addRules(selectors) {
-    for (const selector of selectors) if (selector) appliedRules.add(selector);
+  /**
+   * Quando o elemento removido cobre a tela inteira (overlay/modal), o site
+   * costuma travar o scroll com `overflow: hidden` no html/body. Tirar o nó do
+   * DOM não desfaz isso, então liberamos o scroll junto.
+   */
+  function releaseScrollLock(node) {
+    try {
+      const rect = node.getBoundingClientRect();
+      const style = window.getComputedStyle(node);
+      const coversViewport =
+        rect.width >= window.innerWidth * 0.8 && rect.height >= window.innerHeight * 0.8;
+      if (!coversViewport) return;
+      if (style.position !== 'fixed' && style.position !== 'absolute') return;
+
+      for (const target of [document.documentElement, document.body]) {
+        if (!target) continue;
+        const overflow = target.style.overflow;
+        if (overflow && overflow !== 'visible') target.style.removeProperty('overflow');
+        if (overflow === 'hidden') {
+          target.style.removeProperty('padding-right');
+        }
+      }
+    } catch {
+      /* página em transição: ignora */
+    }
+  }
+
+  /** Remove do DOM tudo que casar com as regras de modo "remove". */
+  function applyRemovals() {
+    if (!removeRules.size || !document.documentElement) return 0;
+    let removed = 0;
+    for (const selector of removeRules) {
+      let nodes;
+      try {
+        nodes = document.querySelectorAll(selector);
+      } catch {
+        continue;
+      }
+      for (const node of nodes) {
+        releaseScrollLock(node);
+        node.remove();
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+
+  function scheduleRemovals() {
+    if (removeTimer || !removeRules.size) return;
+    removeTimer = setTimeout(() => {
+      removeTimer = null;
+      applyRemovals();
+    }, 120);
+  }
+
+  /**
+   * O elemento pode reaparecer (YouTube recria overlays o tempo todo), então
+   * além da remoção imediata observamos o DOM.
+   */
+  function startRemovalWatcher() {
+    if (removeObserver || !removeRules.size) return;
+    applyRemovals();
+    removeObserver = new MutationObserver(scheduleRemovals);
+    removeObserver.observe(document.documentElement, { childList: true, subtree: true });
+    // Rede de segurança para re-renderizações que não disparam childList.
+    setInterval(() => {
+      if (removeRules.size) applyRemovals();
+    }, 2000);
+  }
+
+  function stopRemovalWatcher() {
+    if (!removeObserver) return;
+    removeObserver.disconnect();
+    removeObserver = null;
+  }
+
+  function syncRemovalWatcher() {
+    if (removeRules.size) startRemovalWatcher();
+    else stopRemovalWatcher();
+  }
+
+  function addHideRules(selectors) {
+    for (const selector of selectors) if (selector) hideRules.add(selector);
     renderStyle();
   }
 
+  function addRemoveRules(selectors) {
+    for (const selector of selectors) if (selector) removeRules.add(selector);
+    syncRemovalWatcher();
+    applyRemovals();
+  }
+
   function removeRule(selector) {
-    appliedRules.delete(selector);
+    hideRules.delete(selector);
+    removeRules.delete(selector);
     renderStyle();
+    syncRemovalWatcher();
   }
 
   function hideNow(selectors) {
     if (!selectors.length) return;
     if (document.documentElement) {
-      addRules(selectors);
+      addHideRules(selectors);
     } else {
-      document.addEventListener('readystatechange', () => addRules(selectors), { once: true });
+      document.addEventListener('readystatechange', () => addHideRules(selectors), { once: true });
     }
   }
 
@@ -64,9 +157,10 @@
         type: 'cosmetic',
         host: location.hostname,
       });
-      if (response?.ok && Array.isArray(response.result.hide)) {
-        hideNow(response.result.hide);
-      }
+      if (!response?.ok) return;
+      const { hide = [], remove = [] } = response.result || {};
+      if (Array.isArray(hide)) hideNow(hide);
+      if (Array.isArray(remove) && remove.length) addRemoveRules(remove);
     } catch {
       /* service worker ainda acordando ou extensão recarregando */
     }
@@ -244,13 +338,14 @@
       return;
     }
 
-    addRules([selector]);
+    addHideRules([selector]);
     void savePick(selector);
   }
 
   /**
    * Salva a regra e mostra o aviso com "Desfazer" — antes a regra era aplicada
    * em silêncio e não havia como ver ou remover depois.
+   * O modo (esconder ou remover do DOM) é escolhido nas opções.
    */
   async function savePick(selector) {
     let domain = '';
@@ -268,15 +363,18 @@
       return;
     }
 
-    undoToast(`AdShield: elemento bloqueado (${selector.slice(0, 42)}${selector.length > 42 ? '…' : ''})`, async () => {
-      removeRule(selector);
-      try {
-        await chrome.runtime.sendMessage({ type: 'undoPick', domain, selector });
-        toast('AdShield: bloqueio desfeito.');
-      } catch {
-        toast('AdShield: desfeito nesta página; recarregue se voltar.');
-      }
-    });
+    undoToast(
+      `AdShield: bloqueado (${selector.slice(0, 38)}${selector.length > 38 ? '…' : ''}) · modo "esconder"`,
+      async () => {
+        removeRule(selector);
+        try {
+          await chrome.runtime.sendMessage({ type: 'undoPick', domain, selector });
+          toast('AdShield: bloqueio desfeito.');
+        } catch {
+          toast('AdShield: desfeito nesta página; recarregue se voltar.');
+        }
+      },
+    );
   }
 
   function onKey(event) {

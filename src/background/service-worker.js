@@ -332,10 +332,11 @@ async function loadCosmetic() {
 }
 
 async function cosmeticFor(host, settings) {
-  if (!settings.cosmetic || !host) return { hide: [], unhide: [] };
+  if (!settings.cosmetic || !host) return { hide: [], remove: [], unhide: [] };
   const { domains, unhide } = await loadCosmetic();
   const candidates = hostCandidates(host);
   const hide = new Set();
+  const remove = new Set();
   const unhideSet = new Set();
 
   for (const candidate of candidates) {
@@ -345,47 +346,79 @@ async function cosmeticFor(host, settings) {
     if (exclusions) for (const selector of exclusions) unhideSet.add(selector.trim());
   }
 
-  const stored = await chrome.storage.local.get(STORAGE.customCosmetic);
-  const custom = stored[STORAGE.customCosmetic] || {};
+  const custom = await readCustomCosmetic();
   for (const candidate of candidates) {
-    const entry = custom[candidate];
-    if (entry) for (const selector of entry) hide.add(selector);
+    for (const [selector, mode] of Object.entries(custom[candidate] || {})) {
+      if (mode === 'remove') remove.add(selector);
+      else hide.add(selector);
+    }
   }
 
-  const hideList = [...hide].filter((selector) => selector && !unhideSet.has(selector));
-  return { hide: hideList, unhide: [...unhideSet] };
+  const hideList = [...hide].filter((selector) => selector && !unhideSet.has(selector) && !remove.has(selector));
+  return { hide: hideList, remove: [...remove], unhide: [...unhideSet] };
+}
+
+/** Modos de uma regra personalizada: esconder (CSS) ou tirar do DOM. */
+const COSMETIC_MODES = new Set(['hide', 'remove']);
+
+/**
+ * Aceita o formato antigo (`{dominio: ["seletor"]}`) e o novo
+ * (`{dominio: {"seletor": "hide" | "remove"}}`), sempre devolvendo o novo.
+ */
+function normalizeCustomCosmetic(raw) {
+  const result = {};
+  if (!raw || typeof raw !== 'object') return result;
+  for (const [domain, value] of Object.entries(raw)) {
+    if (!domain || typeof domain !== 'string') continue;
+    const rules = {};
+    if (Array.isArray(value)) {
+      for (const selector of value) {
+        if (typeof selector === 'string' && selector) rules[selector] = 'hide';
+      }
+    } else if (value && typeof value === 'object') {
+      for (const [selector, mode] of Object.entries(value)) {
+        if (typeof selector === 'string' && selector) {
+          rules[selector] = COSMETIC_MODES.has(mode) ? mode : 'hide';
+        }
+      }
+    }
+    if (Object.keys(rules).length) result[domain] = rules;
+  }
+  return result;
 }
 
 async function readCustomCosmetic() {
   const stored = await chrome.storage.local.get(STORAGE.customCosmetic);
-  return stored[STORAGE.customCosmetic] || {};
+  return normalizeCustomCosmetic(stored[STORAGE.customCosmetic]);
 }
 
 async function writeCustomCosmetic(custom) {
-  const clean = {};
-  for (const [domain, selectors] of Object.entries(custom)) {
-    const list = [...new Set(selectors)].filter((selector) => typeof selector === 'string' && selector);
-    if (list.length) clean[domain] = list;
-  }
+  const clean = normalizeCustomCosmetic(custom);
   await chrome.storage.local.set({ [STORAGE.customCosmetic]: clean });
   return clean;
 }
 
-async function addCustomCosmetic(host, selector) {
+async function addCustomCosmetic(host, selector, mode = 'hide') {
   const custom = await readCustomCosmetic();
   const base = registrableDomain(host) || host;
-  const target = custom[base] || [];
-  if (!target.includes(selector)) target.push(selector);
-  custom[base] = target;
+  const rules = custom[base] || {};
+  rules[selector] = COSMETIC_MODES.has(mode) ? mode : 'hide';
+  custom[base] = rules;
   const next = await writeCustomCosmetic(custom);
-  return { domain: base, selectors: next[base] || [], customCosmetic: next };
+  return { domain: base, mode: rules[selector], rules: next[base] || {}, customCosmetic: next };
+}
+
+async function applyCosmeticMode(domain, selector, mode) {
+  if (!COSMETIC_MODES.has(mode)) throw new Error(`modo inválido: ${mode}`);
+  const custom = await readCustomCosmetic();
+  if (!custom[domain] || !(selector in custom[domain])) throw new Error('regra não encontrada');
+  custom[domain][selector] = mode;
+  return writeCustomCosmetic(custom);
 }
 
 async function deleteCosmeticRule(domain, selector) {
   const custom = await readCustomCosmetic();
-  if (Array.isArray(custom[domain])) {
-    custom[domain] = custom[domain].filter((item) => item !== selector);
-  }
+  if (custom[domain]) delete custom[domain][selector];
   return writeCustomCosmetic(custom);
 }
 
@@ -566,8 +599,17 @@ const handlers = {
     const tabId = message.tabId ?? sender.tab?.id ?? -1;
     const host = message.host || (sender.tab ? hostFromUrl(sender.tab.url || '') : '');
     if (!host || !message.selector) throw new Error('seleção inválida');
-    const result = await addCustomCosmetic(host, message.selector);
-    return { ok: true, tabId, domain: result.domain, selectors: result.selectors };
+    const result = await addCustomCosmetic(host, message.selector, message.mode || 'hide');
+    return { ok: true, tabId, domain: result.domain, mode: result.mode, rules: result.rules };
+  },
+
+  async setCosmeticMode(message) {
+    const domain = String(message.domain || '');
+    const selector = String(message.selector || '');
+    const mode = String(message.mode || '');
+    if (!domain || !selector) throw new Error('regra inválida');
+    const customCosmetic = await applyCosmeticMode(domain, selector, mode);
+    return { ok: true, customCosmetic };
   },
 
   async undoPick(message) {
@@ -764,6 +806,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 installCounter();
 void bootstrap().catch((error) => console.error('[AdShield] bootstrap inicial:', error));
+
+
 
 
 
